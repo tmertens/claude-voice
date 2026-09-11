@@ -715,16 +715,17 @@ def get_pipe():
 
 def synth_kokoro(text: str, voice: str, speed: float, cfg: dict):
     pipe = get_pipe()
-    display_sentences = split_sentences(text)
-    speech_sentences = split_sentences(fix_pronunciation(text))
 
     parts, timings = [], []
     offset = 0
-    for i, sentence in enumerate(speech_sentences):
+    # Split once: substitutions such as "vs." -> "versus" remove punctuation,
+    # so splitting the spoken text again can detach timings from display words.
+    for display_sentence in split_sentences(text):
+        sentence = fix_pronunciation(display_sentence)
         chunks = []
         for result in pipe(sentence, voice=voice, speed=speed):
             chunks.append(result.audio.numpy())
-        words = display_sentences[i].split() if i < len(display_sentences) else []
+        words = display_sentence.split()
         if chunks:
             audio = np.concatenate(chunks)
             seg_dur = len(audio) / SAMPLE_RATE
@@ -1121,6 +1122,10 @@ def speak_and_highlight(text: str, provider: str | None = None, voice: str | Non
         out.write(f"\r\033[2A\033[K{header}\n\033[K  {karaoke}\n\033[K  {bar}")
         out.flush()
 
+    # The last highlight marks a word's start, not the end of its audio.
+    # Explicit stop requests also unblock sounddevice's completion wait.
+    if not _interrupted:
+        sd.wait()
     sd.stop()
     _restore_terminal()
     total_time = time.monotonic() - t0

@@ -117,6 +117,7 @@ PRONOUNCE = {
     "JSON": "jason",
     "PyPI": "pie pee eye",
     "npm": "N P M",
+    "vs.": "versus",
     "kwargs": "keyword args",
     "stdout": "standard out",
     "stderr": "standard error",
@@ -583,7 +584,7 @@ def clean_for_speech(text: str) -> str:
 
 def fix_pronunciation(text: str) -> str:
     for term, replacement in PRONOUNCE.items():
-        text = re.sub(rf"\b{re.escape(term)}\b", replacement, text)
+        text = re.sub(rf"\b{re.escape(term)}(?!\w)", replacement, text)
     return text
 
 
